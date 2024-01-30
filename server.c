@@ -76,7 +76,23 @@ int main(void) {
     printf("Error Number: %i\n", errno);
   }
 
-// TODO: Accept client socket
+  // TODO: Accept client socket
+
+  struct sockaddr_storage client_address;
+  socklen_t address_size;
+
+  printf("Waiting to accept connection... ");
+  fflush(stdout);   // allows text to print before waiting for client to be accepted
+
+  int client_socket = accept(server_socket, (struct sockaddr *)&client_address, &address_size);   // accept client connection and update client address and address size information
+
+  if (client_socket == -1) {
+    printf("Failed to accept connection on port %s\n", PORT);
+    printf("Error Number: %i\n", errno);
+  }
+  else {
+    printf("Success\n");
+  }
 
 // TODO: Process request
 
