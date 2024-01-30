@@ -62,7 +62,19 @@ int main(void) {
     exit(EXIT_FAILURE);
   }
 
-// TODO: Listen on socket
+  // TODO: Listen on socket
+
+  printf("Preparing to listen for connections on port %s...", PORT);
+
+  int listening = listen(server_socket, 1);   // listen on port binded to socked file descriptor with a single queued connection allowed
+
+  if (listening == 0) {
+    printf("Success\n");
+  }
+  else {
+    printf("Failed to listen for connections on port %s\n", PORT);
+    printf("Error Number: %i\n", errno);
+  }
 
 // TODO: Accept client socket
 
