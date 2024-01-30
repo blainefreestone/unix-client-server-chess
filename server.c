@@ -1,17 +1,18 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 
 int main(void) {
-  const char *PORT = "21202"; // for my birthday 02/12/2002
+  // get socket file descriptor
   
-  // Socket
+  const char *PORT = "21202"; // for my birthday 02/12/2002
   struct addrinfo server_information;
-  // Set configuration for getaddrinfo():
+  // set configuration for getaddrinfo():
   server_information.ai_family = AF_UNSPEC;       // IPv4 or IPv6
   server_information.ai_socktype = SOCK_STREAM;   // TCP Stream Socket
-  server_information.ai_flags = AI_PASSIVE;       // Automatically fill in host IP
+  server_information.ai_flags = AI_PASSIVE;       // automatically fill in host IP
 
   struct addrinfo *server_adress_info;
 
@@ -24,14 +25,27 @@ int main(void) {
     &server_adress_info       // points to result struct to hold address information
   );
 
-  if (result == 0) {                        // If addrinfo successfuly generated...
+  if (result == 0) {                        // if addrinfo successfuly generated...
     printf("Success\n");
   }
-  else {                                    // Otherwise use gai_strerror to interpret error code and display
-    printf("%s", gai_strerror(result));
+  else {                                    // otherwise use gai_strerror to interpret error code and display
+    printf("%s\n", gai_strerror(result));
+    exit(EXIT_FAILURE);
   }
 
-// TODO: Bind to socket
+  printf("Getting socket file descriptor... ");
+
+  int server_socket = socket(server_adress_info -> ai_family, server_adress_info -> ai_socktype, server_adress_info -> ai_protocol);   // get server socket descriptor
+
+  if (server_socket == -1) {                        // if server socket was not retrieved print error and exit
+    printf("Failed\n");
+    printf("Error Number: %i\n", server_socket);
+  }
+  else {                                            // otherwise...
+    printf("Success\n");
+  }
+
+// Bind socket to port
 
 // TODO: Listen on socket
 
