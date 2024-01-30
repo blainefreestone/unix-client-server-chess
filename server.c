@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -39,13 +40,27 @@ int main(void) {
 
   if (server_socket == -1) {                        // if server socket was not retrieved print error and exit
     printf("Failed\n");
-    printf("Error Number: %i\n", server_socket);
+    printf("Error Number: %i\n", errno);
+    exit(EXIT_FAILURE);
   }
   else {                                            // otherwise...
     printf("Success\n");
   }
 
-// Bind socket to port
+  // Bind socket to port
+
+  printf("Binding socket to port %s... ", PORT);
+
+  int bind_server_socket = bind(server_socket, server_adress_info -> ai_addr, server_adress_info -> ai_addrlen);  // bind socket file descriptior to port on the machine
+
+  if (bind_server_socket == 0) {
+    printf("Success\n");
+  }
+  else {
+    printf("Failed to bind socket to port %s\n", PORT);
+    printf("Error Number: %i\n", errno);
+    exit(EXIT_FAILURE);
+  }
 
 // TODO: Listen on socket
 
