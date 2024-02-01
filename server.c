@@ -1,15 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <netdb.h>
 
+#define PORT "21202" // for my birthday 02/12/2002
+#define BACKLOG 2
+#define NUM_CLIENTS 2
+
 int main(void) {
   // get socket file descriptor
-  
-  const char *PORT = "21202"; // for my birthday 02/12/2002
+
   struct addrinfo server_information;
   // set configuration for getaddrinfo():
   server_information.ai_family = AF_UNSPEC;       // IPv4 or IPv6
@@ -21,7 +25,7 @@ int main(void) {
   printf("Getting host address information... ");
 
   int result = getaddrinfo(
-    NULL,                     // automatically use host ip
+    "10.0.2.15",                     // automatically use host ip
     PORT,                     // use constant port number defined at top of file "21202"
     &server_information,      // points to struct with server information
     &server_adress_info       // points to result struct to hold address information
@@ -70,7 +74,7 @@ int main(void) {
 
   printf("Preparing to listen for connections on port %s...", PORT);
 
-  int listening = listen(server_socket, 1);   // listen on port binded to socked file descriptor with a single queued connection allowed
+  int listening = listen(server_socket, BACKLOG);   // listen on port binded to socked file descriptor with a single queued connection allowed
 
   // success and error messages
   if (listening == 0) {
@@ -81,31 +85,57 @@ int main(void) {
     printf("Error Number: %i\n", errno);
   }
 
-  // TODO: Accept client socket
+  // Accept client socket
+  printf("Waiting for clients...\n");
 
+  int client_count = 0; // keeps track of number of clients connected
+  int client_sockets[NUM_CLIENTS]; // array of client file descriptrs
   struct sockaddr_storage client_address;
-  socklen_t address_size;
+  socklen_t address_size = sizeof(client_address);
 
-  printf("Waiting to accept connection... ");
-  fflush(stdout);   // allows text to print before waiting for client to be accepted
+  while (1) {
+    // accept client connection and update client address and address size information
+    client_sockets[client_count] = accept(server_socket, (struct sockaddr *)&client_address, &address_size);
 
-  int client_socket = accept(server_socket, (struct sockaddr *)&client_address, &address_size);   // accept client connection and update client address and address size information
+    // success and error messages
+    if (client_sockets[client_count] == -1) {
+      printf("Failed to accept connection on port %s\n", PORT);
+      printf("Error Number: %i\n", errno);
+    }
+    else {
+      printf("Client %d succesfully connected\n", client_count + 1);
+      client_count++; // increase program count of clients
+    }
 
-  // success and error messages
-  if (client_socket == -1) {
-    printf("Failed to accept connection on port %s\n", PORT);
-    printf("Error Number: %i\n", errno);
+    if (client_count >= NUM_CLIENTS) { // number of clients has reached maximum
+      printf("All clients connected\n");
+      // declare client_one and client_two
+      int client_one = client_sockets[0];
+      int client_two = client_sockets[1];
+      break;
+    }
   }
-  else {
-    printf("Success\n");
-  }
 
-  // TODO: Process request
+  // Process request
+
+  printf("End");
+  return 0;
+
+  while(1) {
+    char request[100];
+    int recieving = recv(client_sockets[1], request, 100, 0);
+
+    if (strcmp(request, "exit\n") == 0) {
+      break;
+    }
+
+    printf("%s", request);
+  }
 
   // Reply to Client
 
-  char *message = "Hello world!\n";
-  int sending = send(client_socket, message, 14, 0);   // send string to client socket
+  char *message = "Hello client!\n";
+  int sending = send(client_sockets[1], message, 15, 0);   // send string to client socket
 
   // success and error messages
   if (sending == -1) {
