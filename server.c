@@ -109,8 +109,9 @@ int main(void) {
     }
     else {
       printf("Client %d succesfully connected\n", client_count + 1);
+      printf("Socket File Descriptor %d\n", client_sockets[client_count]);
 
-      if (client_sockets[client_count] > max_socket_fd) {
+      if (client_sockets[client_count] + 1 > max_socket_fd) {
         max_socket_fd = client_sockets[client_count] + 1; // update max socket fd for later select function if it is higher than the current
       }
 
@@ -132,11 +133,12 @@ int main(void) {
 
   while(1) {
     char message[100];
+    memset(message, 0, sizeof(message));
 
     fd_set sockets;
     FD_ZERO(&sockets);
 
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < NUM_CLIENTS; i++) {
       FD_SET(client_sockets[i], &sockets);
     }
 
@@ -151,11 +153,31 @@ int main(void) {
       printf("Error\n");
       printf("Error number: %d\n", errno);
     }
-    // if successful, loop through socket file descriptors to find and store message
+    // if successful, loop through socket file descriptors to find message and transmit to other clients
     else {
-      for (int i = 0; i < 2; i++) {
-        if FD_ISSET(client_sockets[i], &sockets); {
-          recv(client_sockets[i], message, 100, 0);
+      for (int i = 0; i < NUM_CLIENTS; i++) {
+        if (FD_ISSET(client_sockets[i], &sockets)) {
+          int recv_status = recv(client_sockets[i], message, 100, 0);   // if file descriptor has data to be read, read socket for the data
+          printf("%s", message);
+          memset(message, 0, sizeof(message));
+          fflush(stdout);
+
+          // send message to all other clients
+          int recipient_clients[NUM_CLIENTS];
+
+          for (int j = 0; j < NUM_CLIENTS; j++) {   // new array with client sockets allowing us to remove sender client
+            recipient_clients[j] = client_sockets[j]; 
+          } 
+
+          for(int j = i; j < NUM_CLIENTS; j++) recipient_clients[i] = recipient_clients[i + 1]; // remove sender client from new array
+          
+          for(int j = 0; j < NUM_CLIENTS - 1; j++) {
+            int send_status = send(recipient_clients[j], message, 100, 0); // send message to other clients
+            // success and error messages
+            if (send_status > 0) {
+              printf("Successfully sent %d bytes to fd %d\n", send_status, recipient_clients[j]);
+            }
+          }
         }
       }
     }
