@@ -8,14 +8,27 @@
 #include <netdb.h>
 
 #define PORT "21202" // for my birthday 02/12/2002
+#define IP "10.0.2.15"
 #define BACKLOG 2
 #define NUM_CLIENTS 2
 
-int main(void) {
+void remove_element(int array[], int size, int index) {
+    if (index < 0 || index >= size) {
+        // Invalid index, cannot remove element
+        return;
+    }
+
+    // Shift elements after the removed element one position to the left
+    for (int i = index; i < size - 1; i++) {
+        array[i] = array[i + 1];
+    }
+}
+
+int get_and_bind_to_socket(char *ip, char *port) {
   // get socket file descriptor
 
+  // set configuration for getaddrinfo(): 
   struct addrinfo server_information;
-  // set configuration for getaddrinfo():
   server_information.ai_family = AF_UNSPEC;       // IPv4 or IPv6
   server_information.ai_socktype = SOCK_STREAM;   // TCP Stream Socket
   server_information.ai_flags = AI_PASSIVE;       // automatically fill in host IP if address NULL
@@ -25,8 +38,8 @@ int main(void) {
   printf("Getting host address information... ");
 
   int result = getaddrinfo(
-    "10.0.2.15",              // host ip
-    PORT,                     // use constant port number defined at top of file "21202"
+    ip,              // host ip
+    port,                     // use constant port number defined at top of file "21202"
     &server_information,      // points to struct with server information
     &server_adress_info       // points to result struct to hold address information
   );
@@ -72,7 +85,10 @@ int main(void) {
     exit(EXIT_FAILURE);
   }
 
+  return server_socket;
+}
 
+int listen_on_socket(int server_socket) {
   // Listen on socket
 
   printf("Preparing to listen for connections on port %s...", PORT);
@@ -88,6 +104,13 @@ int main(void) {
     printf("Error Number: %i\n", errno);
   }
 
+  return 1;
+}
+
+int main(void) {
+  int server_socket = get_and_bind_to_socket(IP, PORT);
+
+  listen_on_socket(server_socket);
 
   // Accept client sockets
   printf("Waiting for clients...\n");
@@ -169,7 +192,8 @@ int main(void) {
             recipient_clients[j] = client_sockets[j]; 
           } 
 
-          for(int j = i; j < NUM_CLIENTS; j++) recipient_clients[i] = recipient_clients[i + 1]; // remove sender client from new array
+          remove_element(recipient_clients, NUM_CLIENTS, i);
+          // for(int j = i; j < NUM_CLIENTS; j++) recipient_clients[i] = recipient_clients[i + 1]; // remove sender client from new array
           
           for(int j = 0; j < NUM_CLIENTS - 1; j++) {
             int send_status = send(recipient_clients[j], message, 100, 0); // send message to other clients
