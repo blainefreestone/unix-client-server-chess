@@ -88,12 +88,11 @@ int get_and_bind_to_socket(char *ip, char *port) {
   return server_socket;
 }
 
-int listen_on_socket(int server_socket) {
-  // Listen on socket
-
+void listen_on_socket(int server_socket) {
   printf("Preparing to listen for connections on port %s...", PORT);
 
-  int listening = listen(server_socket, BACKLOG);   // listen on port binded to socked file descriptor with a single queued connection allowed
+  // listen on port binded to socked file descriptor with a single queued connection allowed
+  int listening = listen(server_socket, BACKLOG);
 
   // success and error messages
   if (listening == 0) {
@@ -102,57 +101,52 @@ int listen_on_socket(int server_socket) {
   else {
     printf("Failed to listen for connections on port %s\n", PORT);
     printf("Error Number: %i\n", errno);
+    exit(EXIT_FAILURE);
+  }
+}
+
+void accept_client(int server_socket, int* client_socket, int* max_socket_fd) {
+  // define parameters for accept function
+  struct sockaddr_storage client_address;
+  socklen_t address_size = sizeof(client_address);
+
+  // accept client connection and update client address and address size information
+  *client_socket = accept(server_socket, (struct sockaddr *)&client_address, &address_size);
+
+  // success and error messages
+  if (*client_socket == -1) {
+    printf("Failed to accept connection on port %s\n", PORT);
+    printf("Error Number: %i\n", errno);
+    exit(EXIT_FAILURE);
+  }
+  else {
+    printf("Client succesfully connected (fd: %d)\n", *client_socket);
   }
 
-  return 1;
+  // update max socket fd for later select function if new client socket fd is greater than running max
+  if (*client_socket + 1 > *max_socket_fd) *max_socket_fd = *client_socket + 1;
 }
 
 int main(void) {
-  int server_socket = get_and_bind_to_socket(IP, PORT);
+  int server_socket;
+  int client_one_socket;
+  int client_two_socket;
+  int max_socket_fd = 0;
 
+  // Get and bind to host socket
+  server_socket = get_and_bind_to_socket(IP, PORT);
+
+  // Listen on server socket
   listen_on_socket(server_socket);
 
   // Accept client sockets
   printf("Waiting for clients...\n");
+  accept_client(server_socket, &client_one_socket, &max_socket_fd);   // accept client one and save fd in client_one_socket
+  accept_client(server_socket, &client_two_socket, &max_socket_fd);   // accept client two and save fd in client_two_socket
 
-  int max_socket_fd = 0; // keeps track of highest socket file description for later select function
-  int client_count = 0; // keeps track of number of clients connected
-  int client_sockets[NUM_CLIENTS]; // array of client file descriptrs
-  struct sockaddr_storage client_address;
-  socklen_t address_size = sizeof(client_address);
+  printf("(max socket fd: %d)\n", max_socket_fd);
 
-  while (1) {
-    // accept client connection and update client address and address size information
-    client_sockets[client_count] = accept(server_socket, (struct sockaddr *)&client_address, &address_size);
-
-    // success and error messages
-    if (client_sockets[client_count] == -1) {
-      printf("Failed to accept connection on port %s\n", PORT);
-      printf("Error Number: %i\n", errno);
-    }
-    else {
-      printf("Client %d succesfully connected\n", client_count + 1);
-      printf("Socket File Descriptor %d\n", client_sockets[client_count]);
-
-      if (client_sockets[client_count] + 1 > max_socket_fd) {
-        max_socket_fd = client_sockets[client_count] + 1; // update max socket fd for later select function if it is higher than the current
-      }
-
-      client_count++; // increase program count of clients
-    }
-
-    if (client_count >= NUM_CLIENTS) { // number of clients has reached maximum
-      printf("All %d client(s) connected\n", client_count);
-      // declare client_one and client_two
-      int client_one = client_sockets[0];
-      int client_two = client_sockets[1];
-      break;
-    }
-  }
-
-  // Interact with clients
-
-  // Listen to clients
+  Listen to clients
 
   while(1) {
     char message[100];
@@ -221,7 +215,7 @@ int main(void) {
     printf("Successfully sent %i bytes\n", sending);
   }
 
-  // Close Server Socket
+  Close Server Socket
 
   printf("Closing server socket... ");
 
