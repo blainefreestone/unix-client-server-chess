@@ -151,6 +151,21 @@ void communicate(int client_one_socket, int client_two_socket) {
   send_message(client_one_socket, return_message);
 }
 
+void close_connection(int server_socket) {
+  printf("Closing server socket... ");
+
+  int closing = close(server_socket);             // close server socket to no longer send or recieve on connection with client socket
+
+  // success and error messages
+  if (closing == 0) {
+    printf("Success\n");
+  }
+  else {
+    printf("Failed to close server socket on port %s\n", PORT);
+    printf("Error Number: %i", errno);
+  }
+}
+
 int main(void) {
   int server_socket;
   int client_one_socket;
@@ -171,19 +186,6 @@ int main(void) {
   printf("(max socket fd: %d)\n", max_socket_fd);
 
   communicate(client_one_socket, client_two_socket);
-  
-  // Close Server Socket
 
-  printf("Closing server socket... ");
-
-  int closing = close(server_socket);             // close server socket to no longer send or recieve on connection with client socket
-
-  // success and error messages
-  if (closing == 0) {
-    printf("Success\n");
-  }
-  else {
-    printf("Failed to close server socket on port %s\n", PORT);
-    printf("Error Number: %i", errno);
-  }
+  close_connection(server_socket);
 }
