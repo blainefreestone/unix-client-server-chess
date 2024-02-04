@@ -7,11 +7,11 @@
 #include <unistd.h>
 #include <netdb.h>
 
-int main(void) {
-  // get socket file descriptor
+#define PORT "21202" // for my birthday 02/12/2002
+#define IP "10.0.2.15"
 
-  const char *PORT = "21202";                     // server port number
-  const char *ADDRESS = "10.0.2.15";
+int get_and_connect_to_server_socket(char *ip, char *port) {
+  // get socket file descriptor
   struct addrinfo server_information;
 
   // set configuration for getaddrinfo():
@@ -19,15 +19,15 @@ int main(void) {
   server_information.ai_socktype = SOCK_STREAM;   // TCP Stream Socket
   server_information.ai_flags = AI_PASSIVE;       // automatically fill in host IP
 
-  struct addrinfo *server_adress_info;
+  struct addrinfo *server_address_info;
 
   printf("Getting host address information... ");
 
   int result = getaddrinfo(
-    ADDRESS,
-    PORT,
+    ip,
+    port,
     &server_information,
-    &server_adress_info
+    &server_address_info
   );
 
   // success and error messages
@@ -41,7 +41,7 @@ int main(void) {
 
   printf("Getting socket file descriptor... ");
 
-  int server_socket = socket(server_adress_info -> ai_family, server_adress_info -> ai_socktype, server_adress_info -> ai_protocol);   // get server socket descriptor
+  int server_socket = socket(server_address_info -> ai_family, server_address_info -> ai_socktype, server_address_info -> ai_protocol);   // get server socket descriptor
 
   // success and error messages
   if (server_socket == -1) {
@@ -55,7 +55,7 @@ int main(void) {
 
   // connect to server
   
-  int connecting = connect(server_socket, server_adress_info -> ai_addr, server_adress_info -> ai_addrlen);   // establish connection to server socket
+  int connecting = connect(server_socket, server_address_info -> ai_addr, server_address_info -> ai_addrlen);   // establish connection to server socket
 
   // success and error messages
   if (connecting == -1) {
@@ -66,6 +66,23 @@ int main(void) {
   else { 
     printf("Success\n");
   }
+
+  return server_socket;
+}
+
+void get_connection_details(int server_socket, char *details) {
+  printf("Getting connection details... \n");
+  recv(server_socket, details, 100, 0);
+  printf("%s", details);
+}
+
+int main(void) {
+  int server_socket;
+  char connection_details[100];
+
+  server_socket = get_and_connect_to_server_socket(IP, PORT);
+  get_connection_details(server_socket, connection_details);
+
 
   // communicate with server
   while (1) {
