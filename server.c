@@ -127,6 +127,30 @@ void accept_client(int server_socket, int* client_socket, int* max_socket_fd) {
   if (*client_socket + 1 > *max_socket_fd) *max_socket_fd = *client_socket + 1;
 }
 
+void receive_message(int client_socket, char *message) {
+
+  printf("Waiting for message from client\n");
+  int receiving = recv(client_socket, message, 100, 0);   // wait and receive message from client socket and save to message string
+  printf("Received message:\n%s", message);
+}
+
+const char* process_message(char* message) {
+  return "Thanks for the message, client!\n";
+}
+
+void send_message(int client_socket, const char *message) {
+  send(client_socket, message, 100, 0);
+}
+
+void communicate(int client_one_socket, int client_two_socket) {
+  char message[100];
+  memset(message, 0, 100);    // empty out message string
+  receive_message(client_one_socket, message);
+  const char* return_message = process_message(message);
+  printf("Message to send:\n%s", process_message(message));
+  send_message(client_one_socket, return_message);
+}
+
 int main(void) {
   int server_socket;
   int client_one_socket;
@@ -146,76 +170,9 @@ int main(void) {
 
   printf("(max socket fd: %d)\n", max_socket_fd);
 
-  Listen to clients
-
-  while(1) {
-    char message[100];
-    memset(message, 0, sizeof(message));
-
-    fd_set sockets;
-    FD_ZERO(&sockets);
-
-    for (int i = 0; i < NUM_CLIENTS; i++) {
-      FD_SET(client_sockets[i], &sockets);
-    }
-
-    int select_result = select(max_socket_fd, &sockets, NULL, NULL, NULL);
-
-    // error and failure messages
-    if (select_result == 0) {
-      printf("Did not receive any data\n");
-      break;
-    }
-    else if (select_result == -1) {
-      printf("Error\n");
-      printf("Error number: %d\n", errno);
-    }
-    // if successful, loop through socket file descriptors to find message and transmit to other clients
-    else {
-      for (int i = 0; i < NUM_CLIENTS; i++) {
-        if (FD_ISSET(client_sockets[i], &sockets)) {
-          int recv_status = recv(client_sockets[i], message, 100, 0);   // if file descriptor has data to be read, read socket for the data
-          printf("%s", message);
-          memset(message, 0, sizeof(message));
-          fflush(stdout);
-
-          // send message to all other clients
-          int recipient_clients[NUM_CLIENTS];
-
-          for (int j = 0; j < NUM_CLIENTS; j++) {   // new array with client sockets allowing us to remove sender client
-            recipient_clients[j] = client_sockets[j]; 
-          } 
-
-          remove_element(recipient_clients, NUM_CLIENTS, i);
-          // for(int j = i; j < NUM_CLIENTS; j++) recipient_clients[i] = recipient_clients[i + 1]; // remove sender client from new array
-          
-          for(int j = 0; j < NUM_CLIENTS - 1; j++) {
-            int send_status = send(recipient_clients[j], message, 100, 0); // send message to other clients
-            // success and error messages
-            if (send_status > 0) {
-              printf("Successfully sent %d bytes to fd %d\n", send_status, recipient_clients[j]);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // Reply to Client
-
-  char *message = "Hello client!\n";
-  int sending = send(client_sockets[1], message, 15, 0);   // send string to client socket
-
-  // success and error messages
-  if (sending == -1) {
-    printf("Failed to send message to client\n");
-    printf("Error Number: %i\n", errno);
-  }
-  else {
-    printf("Successfully sent %i bytes\n", sending);
-  }
-
-  Close Server Socket
+  communicate(client_one_socket, client_two_socket);
+  
+  // Close Server Socket
 
   printf("Closing server socket... ");
 
