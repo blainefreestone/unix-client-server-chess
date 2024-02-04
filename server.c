@@ -135,20 +135,29 @@ void receive_message(int client_socket, char *message) {
 }
 
 const char* process_message(char* message) {
-  return "Thanks for the message, client!\n";
+  return "Hello, client";
 }
 
 void send_message(int client_socket, const char *message) {
   send(client_socket, message, 100, 0);
 }
 
-void communicate(int client_one_socket, int client_two_socket) {
+int communicate(int active_client_socket, int passive_client_socket) {
   char message[100];
   memset(message, 0, 100);    // empty out message string
-  receive_message(client_one_socket, message);
+  receive_message(active_client_socket, message);
+
+  // exit condition
+  if (strcmp("exit\n", message) == 0) {
+    return 0;   // client disconnect return value
+  }
+
   const char* return_message = process_message(message);
   printf("Message to send:\n%s", process_message(message));
-  send_message(client_one_socket, return_message);
+  send_message(active_client_socket, return_message);
+  send_message(passive_client_socket, return_message);
+
+  return 1;
 }
 
 void close_connection(int server_socket) {
@@ -180,12 +189,22 @@ int main(void) {
 
   // Accept client sockets
   printf("Waiting for clients...\n");
+
   accept_client(server_socket, &client_one_socket, &max_socket_fd);   // accept client one and save fd in client_one_socket
+  send_message(client_one_socket, "player_one");
+
   accept_client(server_socket, &client_two_socket, &max_socket_fd);   // accept client two and save fd in client_two_socket
+  send_message(client_two_socket, "player_two");
 
-  printf("(max socket fd: %d)\n", max_socket_fd);
+  printf("(max socket fd: %d)\n", max_socket_fd);   // print running maxfd (mostly for bugging)
 
-  communicate(client_one_socket, client_two_socket);
+  int status;
+  while (1) {
+    status = communicate(client_one_socket, client_two_socket);
+    if (status == 0) {
+      break;
+    }
+  }
 
   close_connection(server_socket);
 }
