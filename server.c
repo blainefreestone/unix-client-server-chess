@@ -12,18 +12,6 @@
 #define BACKLOG 2
 #define NUM_CLIENTS 2
 
-void remove_element(int array[], int size, int index) {
-    if (index < 0 || index >= size) {
-        // Invalid index, cannot remove element
-        return;
-    }
-
-    // Shift elements after the removed element one position to the left
-    for (int i = index; i < size - 1; i++) {
-        array[i] = array[i + 1];
-    }
-}
-
 int get_and_bind_to_socket(char *ip, char *port) {
   // get socket file descriptor
 
@@ -128,14 +116,18 @@ void accept_client(int server_socket, int* client_socket, int* max_socket_fd) {
 }
 
 void receive_message(int client_socket, char *message) {
-
   printf("Waiting for message from client\n");
   int receiving = recv(client_socket, message, 100, 0);   // wait and receive message from client socket and save to message string
-  printf("Received message:\n%s", message);
+  printf("Received message:  %s", message);
 }
 
 const char* process_message(char* message) {
-  return "Hello, client";
+  if (strcmp("invalid\n", message) == 0) {
+    return "invalid";
+  }
+  else {
+    return message;
+  }
 }
 
 void send_message(int client_socket, const char *message) {
@@ -149,11 +141,19 @@ int communicate(int active_client_socket, int passive_client_socket) {
 
   // exit condition
   if (strcmp("exit\n", message) == 0) {
+    send_message(passive_client_socket, "exit\n");   // notify passive client to disconnect
     return 0;   // client disconnect return value
   }
 
   const char* return_message = process_message(message);
-  printf("Message to send:\n%s", process_message(message));
+  printf("Message to send: %s", return_message);
+
+  // invalid message condition
+  if (strcmp("invalid", return_message) == 0) {
+    send_message(active_client_socket, return_message);
+    return -1;  // client invalid message return value
+  }
+
   send_message(active_client_socket, return_message);
   send_message(passive_client_socket, return_message);
 
@@ -191,19 +191,43 @@ int main(void) {
   printf("Waiting for clients...\n");
 
   accept_client(server_socket, &client_one_socket, &max_socket_fd);   // accept client one and save fd in client_one_socket
-  send_message(client_one_socket, "player_one");
+  send_message(client_one_socket, "player_one\n");
 
   accept_client(server_socket, &client_two_socket, &max_socket_fd);   // accept client two and save fd in client_two_socket
-  send_message(client_two_socket, "player_two");
+  send_message(client_two_socket, "player_two\n");
 
   printf("(max socket fd: %d)\n", max_socket_fd);   // print running maxfd (mostly for bugging)
 
   int status;
   while (1) {
-    status = communicate(client_one_socket, client_two_socket);
-    if (status == 0) {
+    while (1) {
+      status = communicate(client_one_socket, client_two_socket);
+      if (status == -1) {
+        continue;
+      }
+      else if (status == 0) {
+        goto exit;
+      }
+
       break;
     }
+
+    while (1) {
+      status = communicate(client_two_socket, client_one_socket);
+      if (status == -1) {
+        continue;
+      }
+      else if (status == 0) {
+        goto exit;
+      }
+
+      break;
+    }
+
+    continue;
+
+    exit:
+    break;
   }
 
   close_connection(server_socket);

@@ -71,7 +71,7 @@ int get_and_connect_to_server_socket(char *ip, char *port) {
 }
 
 void get_connection_details(int server_socket, char *details) {
-  printf("Getting connection details... \n");
+  printf("Getting connection details... ");
   recv(server_socket, details, 100, 0);
   printf("%s", details);
 }
@@ -89,6 +89,7 @@ void send_message(int server_socket, const char *message) {
 int communicate(int server_socket) {
   char send_message[100];
   char message[100];
+  printf("> ");
   fgets(send_message, sizeof(send_message), stdin);
 
   int sending  = send(server_socket, send_message, sizeof(send_message), 0);
@@ -108,12 +109,26 @@ int communicate(int server_socket) {
   }
 
   receive_message(server_socket, message);
-  printf("%s", message);
 
-  sleep(3);
+  if (strcmp("exit\n", message) == 0) {
+    return 0;
+  }
+
+  else if (strcmp("invalid", message) == 0) {
+    return -1;
+  }
+
+  sleep(.1);
 
   receive_message(server_socket, message);
-  printf("%s", message);
+
+  if (strcmp("exit\n", message) == 0) {
+    return 0;
+  }
+
+  else if (strcmp("invalid", message) == 0) {
+    return -1;
+  }
 
   return 1;
 }
@@ -131,11 +146,16 @@ int main(void) {
     receive_message(server_socket, message);
   }
 
+  int status;
   while (1) {
     status = communicate(server_socket);
 
     if (status == 0) {
       break;
+    }
+
+    else if (status == -1) {
+      continue;
     }
   }
 
