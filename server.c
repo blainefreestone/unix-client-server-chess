@@ -11,6 +11,7 @@
 #define IP "10.0.2.15"
 #define BACKLOG 2
 #define NUM_CLIENTS 2
+#define MESSAGE_SIZE 200
 
 int get_and_bind_to_socket(char *ip, char *port) {
   // get socket file descriptor
@@ -26,7 +27,7 @@ int get_and_bind_to_socket(char *ip, char *port) {
   printf("Getting host address information... ");
 
   int result = getaddrinfo(
-    ip,              // host ip
+    ip,                       // host ip
     port,                     // use constant port number defined at top of file "21202"
     &server_information,      // points to struct with server information
     &server_adress_info       // points to result struct to hold address information
@@ -55,7 +56,6 @@ int get_and_bind_to_socket(char *ip, char *port) {
   else { 
     printf("Success\n");
   }
-
 
   // Bind socket to port
 
@@ -117,13 +117,14 @@ void accept_client(int server_socket, int* client_socket, int* max_socket_fd) {
 
 void receive_message(int client_socket, char *message) {
   printf("Waiting for message from client\n");
-  int receiving = recv(client_socket, message, 100, 0);   // wait and receive message from client socket and save to message string
+  int receiving = recv(client_socket, message, MESSAGE_SIZE, 0);   // wait and receive message from client socket and save to message string
   printf("Received message:  %s", message);
 }
 
 const char* process_message(char* message) {
+  // invalid case
   if (strcmp("invalid\n", message) == 0) {
-    return "invalid";
+    return "invalid\n";
   }
   else {
     return message;
@@ -131,29 +132,30 @@ const char* process_message(char* message) {
 }
 
 void send_message(int client_socket, const char *message) {
-  send(client_socket, message, 100, 0);
+  send(client_socket, message, MESSAGE_SIZE, 0);  // send message to client socket
 }
 
 int communicate(int active_client_socket, int passive_client_socket) {
-  char message[100];
-  memset(message, 0, 100);    // empty out message string
-  receive_message(active_client_socket, message);
+  char message[MESSAGE_SIZE];                         // initialize message string
+  memset(message, 0, MESSAGE_SIZE);                   // empty out message string
+  receive_message(active_client_socket, message);     // receive string from active_client and store in message
 
   // exit condition
   if (strcmp("exit\n", message) == 0) {
-    send_message(passive_client_socket, "exit\n");   // notify passive client to disconnect
-    return 0;   // client disconnect return value
+    send_message(passive_client_socket, "exit\n");    // notify passive client to disconnect
+    return 0;                                         // client disconnect return value
   }
 
-  const char* return_message = process_message(message);
+  const char* return_message = process_message(message);  // process message from client
   printf("Message to send: %s", return_message);
 
   // invalid message condition
-  if (strcmp("invalid", return_message) == 0) {
-    send_message(active_client_socket, return_message);
-    return -1;  // client invalid message return value
+  if (strcmp("invalid\n", return_message) == 0) {
+    send_message(active_client_socket, return_message);     // notify active client that message was invalid
+    return -1;                                              // client invalid message return value
   }
 
+  // send both clients return message after active_client's message has been processed
   send_message(active_client_socket, return_message);
   send_message(passive_client_socket, return_message);
 
@@ -198,37 +200,31 @@ int main(void) {
 
   printf("(max socket fd: %d)\n", max_socket_fd);   // print running maxfd (mostly for bugging)
 
-  int status;
+  int status;   // keeps track of communicate status for program logic
   while (1) {
-    while (1) {
-      status = communicate(client_one_socket, client_two_socket);
-      if (status == -1) {
-        continue;
-      }
-      else if (status == 0) {
-        goto exit;
-      }
-
+    communicate1:   // label to repeat communicate with client_one_socket in case of invalid message
+    status = communicate(client_one_socket, client_two_socket);
+    // invalid message condition
+    if (status == -1) {
+      goto communicate1;    // repeat communicate process
+    }
+    // exit condition
+    else if (status == 0) {
       break;
     }
 
-    while (1) {
-      status = communicate(client_two_socket, client_one_socket);
-      if (status == -1) {
-        continue;
-      }
-      else if (status == 0) {
-        goto exit;
-      }
-
+    communicate2:   // label to repeat communicate with client_one_socket in case of invalid message
+    status = communicate(client_two_socket, client_one_socket);
+    // invalid message condition
+    if (status == -1) {
+      goto communicate2;
+    }
+    // exit condition
+    else if (status == 0) {
       break;
     }
-
-    continue;
-
-    exit:
-    break;
   }
 
+  // close connection and finish
   close_connection(server_socket);
 }

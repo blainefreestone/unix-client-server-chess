@@ -9,6 +9,7 @@
 
 #define PORT "21202" // for my birthday 02/12/2002
 #define IP "10.0.2.15"
+#define MESSAGE_SIZE 200
 
 int get_and_connect_to_server_socket(char *ip, char *port) {
   // get socket file descriptor
@@ -72,93 +73,67 @@ int get_and_connect_to_server_socket(char *ip, char *port) {
 
 void get_connection_details(int server_socket, char *details) {
   printf("Getting connection details... ");
-  recv(server_socket, details, 100, 0);
+  recv(server_socket, details, MESSAGE_SIZE, 0);  // get information from server about connection in order to configure client logic
   printf("%s", details);
 }
 
 void receive_message(int server_socket, char *message) {
   printf("Waiting for message from server\n");
-  int receiving = recv(server_socket, message, 100, 0);   // wait and receive message from client socket and save to message string
+  int receiving = recv(server_socket, message, MESSAGE_SIZE, 0);   // wait and receive message from client socket and save to message string
   printf("Received message:\n%s", message);
 }
 
 void send_message(int server_socket, const char *message) {
-  send(server_socket, message, 100, 0);
+  send(server_socket, message, MESSAGE_SIZE, 0);    // send message to server
 }
 
 int communicate(int server_socket) {
-  char send_message[100];
-  char message[100];
-  printf("> ");
-  fgets(send_message, sizeof(send_message), stdin);
+  char send_message[MESSAGE_SIZE];                      // initialize message te be sent
+  char message[MESSAGE_SIZE];                           // initialize message to be received
+  printf("> ");                                         // indicate user input to be sent to server
+  fgets(send_message, sizeof(send_message), stdin);     // receive user input to be sent to server and save to send_message
 
-  int sending  = send(server_socket, send_message, sizeof(send_message), 0);
-
-  // success and error messages
-  if (sending == -1) {
-    printf("Failed to send message to client\n");
-    printf("Error Number: %i\n", errno);
-  }
-  else {
-    printf("Successfully sent %i bytes\n", sending);
-  }
+  int sending  = send(server_socket, send_message, sizeof(send_message), 0);    // send message to server
 
   // exit condition
   if (strcmp(send_message, "exit\n") == 0) {
     return 0;
   }
 
-  receive_message(server_socket, message);
+  receive_message(server_socket, message);     // receive return message from server
 
-  if (strcmp("exit\n", message) == 0) {
-    return 0;
+  // exit and invalid conditions
+  if (strcmp("exit\n", message) == 0 || strcmp("invalid\n", message) == 0) {
+      // exit condition
+      if (strcmp("exit\n", message) == 0) {
+          return 0;
+      } 
+      // invalid condition
+      else {
+          return -1;
+      }
   }
 
-  else if (strcmp("invalid", message) == 0) {
-    return -1;
-  }
+  sleep(0.1);
 
-  sleep(.1);
+  receive_message(server_socket, message);    // receive message from server (based on second client's message)
 
-  receive_message(server_socket, message);
-
-  if (strcmp("exit\n", message) == 0) {
-    return 0;
-  }
-
-  else if (strcmp("invalid", message) == 0) {
-    return -1;
+  // exit and invalid conditions
+  if (strcmp("exit\n", message) == 0 || strcmp("invalid\n", message) == 0) {
+      // exit condition
+      if (strcmp("exit\n", message) == 0) {
+          return 0;
+      } 
+      // invalid condition
+      else {
+          return -1;
+      }
   }
 
   return 1;
 }
 
-int main(void) {
-  int server_socket;
-  char connection_details[100];
-  char message[100];
-
-  server_socket = get_and_connect_to_server_socket(IP, PORT);
-  get_connection_details(server_socket, connection_details);
-
-  // if player_two, must listen for server before sending data to server
-  if (strcmp("player_two\n", connection_details) == 0) {
-    receive_message(server_socket, message);
-  }
-
-  int status;
-  while (1) {
-    status = communicate(server_socket);
-
-    if (status == 0) {
-      break;
-    }
-
-    else if (status == -1) {
-      continue;
-    }
-  }
-
+void close_connection(int server_socket) {
   // close connection
 
   printf("Closing server socket... ");
@@ -172,5 +147,39 @@ int main(void) {
   else {
     printf("Failed to close server socket on port %s\n", PORT);
     printf("Error Number: %i", errno);
+    exit(EXIT_FAILURE);
   }
+}
+
+int main(void) {
+  int server_socket;                        // initialize server socket fd
+  char connection_details[MESSAGE_SIZE];    // ititialize connection details to specify configuration for logic
+  char message[MESSAGE_SIZE];               // initialize message string
+
+  // connect to server and get socket fd
+  server_socket = get_and_connect_to_server_socket(IP, PORT);
+  // get connectiot details for logic config
+  get_connection_details(server_socket, connection_details);
+
+  // if player_two, must listen for server before sending data to server
+  if (strcmp("player_two\n", connection_details) == 0) {
+    receive_message(server_socket, message);
+  }
+
+  int status;   // keeps track of communication status for logic
+  while (1) {
+    status = communicate(server_socket);  // communicate with server
+
+    // exit condition
+    if (status == 0) {
+      break;
+    }
+    // invalid condition
+    else if (status == -1) {
+      continue;
+    }
+  }
+
+  // close connection with server
+  close_connection(server_socket);
 }
