@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -67,23 +68,43 @@ int main(void) {
   }
 
   // communicate with server
+  while (1) {
+    char receive_message[100];
+    int receiving = recv(server_socket, receive_message, 100, 0);
 
-  // char send_message[100] = "Hello, server!\n";
-  int sending  = send(server_socket, "Hello, server!\n", 100, 0);
+    printf("%s", receive_message);
+
+    char send_message[100];
+    fgets(send_message, sizeof(send_message), stdin);
+
+    int sending  = send(server_socket, send_message, sizeof(send_message), 0);
+
+    // success and error messages
+    if (sending == -1) {
+      printf("Failed to send message to client\n");
+      printf("Error Number: %i\n", errno);
+    }
+    else {
+      printf("Successfully sent %i bytes\n", sending);
+    }
+
+    if (strcmp(send_message, "exit\n") == 0) {
+      break;
+    }
+  }
+
+  // close connection
+
+  printf("Closing server socket... ");
+
+  int closing = close(server_socket);             // close server socket to no longer send or recieve on connection with server
 
   // success and error messages
-  if (sending == -1) {
-    printf("Failed to send message to client\n");
-    printf("Error Number: %i\n", errno);
+  if (closing == 0) {
+    printf("Success\n");
   }
   else {
-    printf("Successfully sent %i bytes\n", sending);
+    printf("Failed to close server socket on port %s\n", PORT);
+    printf("Error Number: %i", errno);
   }
-
-  char receive_message[100];
-  int receiving = recv(server_socket, receive_message, 100, 0);
-
-  printf("%s", receive_message);
-
-  // TODO: close connection
 }
