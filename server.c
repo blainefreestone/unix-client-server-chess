@@ -124,9 +124,9 @@ void receive_message(int client_socket, char *message) {
   printf("Received message:  %s", message);
 }
 
-const char* process_message(char* message) {
+const char* process_message(char* message, int player_num) {
   // invalid case
-  if (make_move(board, message) == -1) {
+  if (make_move(board, message, player_num) == -1) {
     return "invalid\n";
   }
   return get_board_text(board);
@@ -136,7 +136,7 @@ void send_message(int client_socket, const char *message) {
   send(client_socket, message, MESSAGE_SIZE, 0);  // send message to client socket
 }
 
-int communicate(int active_client_socket, int passive_client_socket) {
+int communicate(int active_client_socket, int passive_client_socket, int active_player_num) {
   char message[MESSAGE_SIZE];                         // initialize message string
   memset(message, 0, MESSAGE_SIZE);                   // empty out message string
   receive_message(active_client_socket, message);     // receive string from active_client and store in message
@@ -147,7 +147,7 @@ int communicate(int active_client_socket, int passive_client_socket) {
     return 0;                                         // client disconnect return value
   }
 
-  const char* return_message = process_message(message);  // process message from client
+  const char* return_message = process_message(message, active_player_num);  // process message from client
   printf("Message to send:\n%s", return_message);
 
   // invalid message condition
@@ -205,7 +205,7 @@ int main(void) {
   int status;   // keeps track of communicate status for program logic
   while (1) {
     communicate1:   // label to repeat communicate with client_one_socket in case of invalid message
-    status = communicate(client_one_socket, client_two_socket);
+    status = communicate(client_one_socket, client_two_socket, 1);
     // invalid message condition
     if (status == -1) {
       goto communicate1;    // repeat communicate process
@@ -216,7 +216,7 @@ int main(void) {
     }
 
     communicate2:   // label to repeat communicate with client_one_socket in case of invalid message
-    status = communicate(client_two_socket, client_one_socket);
+    status = communicate(client_two_socket, client_one_socket, 2);
     // invalid message condition
     if (status == -1) {
       goto communicate2;
