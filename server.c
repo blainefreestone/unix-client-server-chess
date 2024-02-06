@@ -6,12 +6,15 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <netdb.h>
+#include "chess.c"
 
 #define PORT "21202" // for my birthday 02/12/2002
-#define IP "10.0.2.15"
+#define IP "127.0.0.1"
 #define BACKLOG 2
 #define NUM_CLIENTS 2
-#define MESSAGE_SIZE 200
+#define MESSAGE_SIZE 1000
+
+char board[8][8];
 
 int get_and_bind_to_socket(char *ip, char *port) {
   // get socket file descriptor
@@ -123,12 +126,10 @@ void receive_message(int client_socket, char *message) {
 
 const char* process_message(char* message) {
   // invalid case
-  if (strcmp("invalid\n", message) == 0) {
+  if (make_move(board, message) == -1) {
     return "invalid\n";
   }
-  else {
-    return message;
-  }
+  return get_board_text(board);
 }
 
 void send_message(int client_socket, const char *message) {
@@ -147,7 +148,7 @@ int communicate(int active_client_socket, int passive_client_socket) {
   }
 
   const char* return_message = process_message(message);  // process message from client
-  printf("Message to send: %s", return_message);
+  printf("Message to send:\n%s", return_message);
 
   // invalid message condition
   if (strcmp("invalid\n", return_message) == 0) {
@@ -199,6 +200,7 @@ int main(void) {
   send_message(client_two_socket, "player_two\n");
 
   printf("(max socket fd: %d)\n", max_socket_fd);   // print running maxfd (mostly for bugging)
+  set_board_start(board);
 
   int status;   // keeps track of communicate status for program logic
   while (1) {

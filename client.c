@@ -8,8 +8,8 @@
 #include <netdb.h>
 
 #define PORT "21202" // for my birthday 02/12/2002
-#define IP "10.0.2.15"
-#define MESSAGE_SIZE 200
+#define IP "127.0.0.1"
+#define MESSAGE_SIZE 1000
 
 int get_and_connect_to_server_socket(char *ip, char *port) {
   // get socket file descriptor
@@ -80,6 +80,7 @@ void get_connection_details(int server_socket, char *details) {
 void receive_message(int server_socket, char *message) {
   printf("Waiting for message from server\n");
   int receiving = recv(server_socket, message, MESSAGE_SIZE, 0);   // wait and receive message from client socket and save to message string
+  printf("\e[1;1H\e[2J");
   printf("Received message:\n%s", message);
 }
 
