@@ -23,14 +23,14 @@
 void set_board_start(char board[8][8]) {
   char start_board[8][8] = {
   // board is 2d array of characters representing each type of piece.
-    {B_ROOKE, B_KNIGHT, B_BISHOP, B_QUEEN,  B_KING, B_BISHOP, B_KNIGHT, B_ROOKE},
-    {B_PAWN,  B_PAWN,   B_PAWN,   B_PAWN,   B_PAWN, B_PAWN,   B_PAWN,   B_PAWN},
-    {EMPTY,   EMPTY,    EMPTY,    EMPTY,    EMPTY,  EMPTY,    EMPTY,    EMPTY},
-    {EMPTY,   EMPTY,    EMPTY,    EMPTY,    EMPTY,  EMPTY,    EMPTY,    EMPTY},
-    {EMPTY,   EMPTY,    EMPTY,    EMPTY,    EMPTY,  EMPTY,    EMPTY,    EMPTY},
-    {EMPTY,   EMPTY,    EMPTY,    EMPTY,    EMPTY,  EMPTY,    EMPTY,    EMPTY},
+    {W_ROOKE, W_KNIGHT, W_BISHOP, W_QUEEN,  W_KING, W_BISHOP, W_KNIGHT, W_ROOKE},
     {W_PAWN,  W_PAWN,   W_PAWN,   W_PAWN,   W_PAWN, W_PAWN,   W_PAWN,   W_PAWN},
-    {W_ROOKE, W_KNIGHT, W_BISHOP, W_QUEEN,  W_KING, W_BISHOP, W_KNIGHT, W_ROOKE}
+    {EMPTY,   EMPTY,    EMPTY,    EMPTY,    EMPTY,  EMPTY,    EMPTY,    EMPTY},
+    {EMPTY,   EMPTY,    EMPTY,    EMPTY,    EMPTY,  EMPTY,    EMPTY,    EMPTY},
+    {EMPTY,   EMPTY,    EMPTY,    EMPTY,    EMPTY,  EMPTY,    EMPTY,    EMPTY},
+    {EMPTY,   EMPTY,    EMPTY,    EMPTY,    EMPTY,  EMPTY,    EMPTY,    EMPTY},
+    {B_PAWN,  B_PAWN,   B_PAWN,   B_PAWN,   B_PAWN, B_PAWN,   B_PAWN,   B_PAWN},
+    {B_ROOKE, B_KNIGHT, B_BISHOP, B_QUEEN,  B_KING, B_BISHOP, B_KNIGHT, B_ROOKE}
   };
 
   // Copy elements of start_board into board
@@ -43,6 +43,7 @@ void set_board_start(char board[8][8]) {
 
 int make_move(char board[8][8], char *command) {
   // decode command string
+
   int is_capture = 0;
   int destination_char_index = 2;
   int destination_int_index = 3;
@@ -73,7 +74,11 @@ int make_move(char board[8][8], char *command) {
     return -1;
   }
 
-  printf("%d %d %d %d", source_char, source_int, destination_char, destination_int);
+  // update board array with moved piece
+
+  char piece_char = board[source_int-1][source_char-1];       // get piece char from source location
+  board[source_int-1][source_char-1] = EMPTY;                 // set piece char to empty at source location
+  board[destination_int-1][destination_char-1] = piece_char;  // set destination location to piece char from source
 }
 
 char* get_board_text(char board[8][8]) {
@@ -85,7 +90,7 @@ char* get_board_text(char board[8][8]) {
   }
   board_display[index++] = '\n';
 
-  for (int i = 0; i < 8; i++) {
+  for (int i = 7; i >= 0; i--) {
     board_display[index++] = '|';
     board_display[index++] = ' ';
     for (int j = 0; j < 8; j++) {
