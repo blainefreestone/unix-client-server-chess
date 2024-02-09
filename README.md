@@ -1,6 +1,58 @@
 # Overview
 
-{Provide a description the networking program that you wrote. Describe how to use your software.  If you did Client/Server, then you will need to describe how to start both.}
+**This program leverages Unix sockets to establish communication channels between a server and two clients, facilitating a chess game between the two clients.**
+
+The program follows the basic flow of Unix client-server connections and communications:
+
+![Socket Programming Logic](./images/socket_programming.png)
+
+## The Server
+
+The server binds to a socket and gets its file descriptor.
+
+```c
+getaddrinfo(
+   ip,                       // host ip
+   port,                     // use constant port number defined a top of file "21202"
+   &server_information,      // points to struct with server information
+   &server_adress_info       // points to result struct to hold address information
+);
+
+int server_socket = socket(server_adress_info -> ai_family, server_adress_info -> ai_socktype, server_adress_info -> ai_protocol);
+
+bind(server_socket, server_adress_info -> ai_addr, server_adress_info -> ai_addrlen);  // bind socket file descriptior to port on the machine
+```
+
+Then, it listens for connections on that socket ( `BACKLOG` specifies the number of clients allowed to wait for connection at once ).
+
+```c
+listen(server_socket, BACKLOG);
+```
+
+The server then accepts two clients and stores their socket file descriptors for future communication.
+
+```c
+*client_socket = accept(server_socket, (struct sockaddr *)&client_address, &address_size);
+```
+
+The server uses the following functions to communicate with the clients:
+
+```c
+void receive_message(int client_socket, char *message)
+const char* process_message(char* message, int player_num)
+void send_message(int client_socket, const char *message)
+```
+
+The `process_message()` function is used to implement the chess game logic found in the `chess.c` file.
+
+Finally, the server closes the connection with both clients.
+
+```c
+close(server_socket); 
+```
+
+## The Client
+
 
 {Describe your purpose for writing this software.}
 
