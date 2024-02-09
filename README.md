@@ -1,10 +1,14 @@
 # Overview
 
+[Demo Video](http://youtube.link.goes.here)
+
 **This program leverages Unix sockets to establish communication channels between a server and two clients, facilitating a chess game between the two clients.**
 
 The program follows the basic flow of Unix client-server connections and communications:
 
 ![Socket Programming Logic](./images/socket_programming.png)
+
+I wrote this program as an exercise in network programming; to understand and implement basic network communication between two or more computers on a network. Moreover, I wanted to gain more experience in the C programming language.
 
 ## The Server
 
@@ -53,16 +57,42 @@ close(server_socket);
 
 ## The Client
 
+The client gets the socket file descriptor of the server based on given information such as ip address and port number (of the server).
 
-{Describe your purpose for writing this software.}
+```c
+getaddrinfo(
+   ip,
+   port,
+   &server_information,
+   &server_address_info
+);
 
-[Demo Video](http://youtube.link.goes.here)
+int server_socket = socket(server_address_info -> ai_family, server_address_info -> ai_socktype, server_address_info -> ai_protocol);   // get server socket descriptor
+```
 
-# Network Communication
+Then, it establishes a connection with the server.
 
-This implements a client-server TCP network with specific logic to handle two seperate client connections. 
+```c
+connect(server_socket, server_address_info -> ai_addr, server_address_info -> ai_addrlen);   // establish connection to server socket
+```
 
-The messages between the client and the server are all strings; the server has logic to process client messages and return strings.
+Similar to the server, it uses the following functions to communicate with the server. The client however, first receives connection information from the server (in this case whether its player_one or player_two) and then is able to receive and send data.
+
+```c
+void get_connection_details(int server_socket, char *details)
+void receive_message(int server_socket, char *message)
+void send_message(int server_socket, const char *message)
+```
+
+Finally, the client closes its connection.
+
+```c
+close(server_socket);
+```
+
+## The Chess Logic
+
+The logic for the chess game can be found in the `chess.c` file. Since the main purpose of the program was not the implementation of game logic, it will not be outlined here.
 
 # Development
 
@@ -92,16 +122,19 @@ This program was developed...
 
 This program uses Unix socket functions in Linux.
 
-# Useful Websites
+To run...
 
-{Make a list of websites that you found helpful in this project}
+1. Compile the server and client programs using the gnu compiler on Linux `gcc -o Client client.c` and `gcc -o Server server.c`.
+1. Run the server executable `./Server`.
+1. Run the client executables (two connections required to begin the game) `./Client`
+1. To close the connection send the message `exit` to the server from either client. 
+
+# Useful Websites
 * [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/html/split/)
 * [Beej's Guide to C Programming](https://beej.us/guide/bgc/)
 * [Geeks for Geeks - C Programming Language](https://www.geeksforgeeks.org/c-programming-language/)
 
 # Future Work
 
-{Make a list of things that you need to fix, improve, and add in the future.}
-* Item 1
-* Item 2
-* Item 3
+* Implement more accurate and comprehensive logic in the chess game (piece movement verification, checking for checks on either king, castling, etc.)
+* More standardized and flexible communication logic between the server and clients.
