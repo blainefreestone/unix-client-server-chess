@@ -8,8 +8,8 @@
 #include <netdb.h>
 
 #define PORT "21202" // for my birthday 02/12/2002
-#define IP "127.0.0.1"
-#define MESSAGE_SIZE 1000
+#define IP NULL
+#define MESSAGE_SIZE 2000
 
 int get_and_connect_to_server_socket(char *ip, char *port) {
   // get socket file descriptor
@@ -78,10 +78,15 @@ void get_connection_details(int server_socket, char *details) {
 }
 
 void receive_message(int server_socket, char *message) {
-  printf("Waiting for message from server\n");
+  printf("Waiting for opponent to make move.\n");
   int receiving = recv(server_socket, message, MESSAGE_SIZE, 0);   // wait and receive message from client socket and save to message string
-  printf("\e[1;1H\e[2J");
-  printf("Received message:\n%s", message);
+  if (strcmp("invalid\n", message) == 0 || strcmp("exit\n", message) == 0) {
+    printf("Invalid command, try again.\n");
+  }
+  else {
+    printf("\e[1;1H\e[2J");
+    printf("Board:\n%s", message);
+  }
 }
 
 void send_message(int server_socket, const char *message) {
@@ -162,7 +167,9 @@ int main(void) {
   // get connectiot details for logic config
   get_connection_details(server_socket, connection_details);
 
-  // if player_two, must listen for server before sending data to server
+  // receive_message(server_socket, message); // Receive starting board from server
+  
+  // if player_two, must listen for server again before sending data to server
   if (strcmp("player_two\n", connection_details) == 0) {
     receive_message(server_socket, message);
   }

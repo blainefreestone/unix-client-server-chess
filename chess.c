@@ -67,6 +67,12 @@ int is_player_piece(char piece_char, int player_num) {
   return 0;
 }
 
+int is_valid_move(char board[8][8], int source_char, int source_int, int destination_char, int destination_int) {
+  char piece_char = board[source_int-1][source_char-1];
+
+  return 1;
+}
+
 int make_move(char board[8][8], char *command, int player_num) {
   // decode command string
 

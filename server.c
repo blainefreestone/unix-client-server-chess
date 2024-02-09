@@ -9,7 +9,7 @@
 #include "chess.c"
 
 #define PORT "21202" // for my birthday 02/12/2002
-#define IP "127.0.0.1"
+#define IP NULL
 #define BACKLOG 2
 #define NUM_CLIENTS 2
 #define MESSAGE_SIZE 1000
@@ -125,6 +125,8 @@ void receive_message(int client_socket, char *message) {
 }
 
 const char* process_message(char* message, int player_num) {
+  printf("Processing message\n");
+  
   // invalid case
   if (make_move(board, message, player_num) == -1) {
     return "invalid\n";
