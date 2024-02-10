@@ -1,6 +1,6 @@
 # Overview
 
-[Demo Video]([http://youtube.link.goes.here](https://github.com/blainefreestone/unix-client-server-chess))
+[Demo Video](https://youtu.be/JrgG8PQr9cs)
 
 **This program leverages Unix sockets to establish communication channels between a server and two clients, facilitating a chess game between the two clients.**
 
